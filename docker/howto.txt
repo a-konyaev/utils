@@ -1,0 +1,118 @@
+// установить докер (если у вас на компе есть менеджер пакетов chocolatery)
+choco install docker
+
+// если у вас Windows 7, то нужно ставить тулбокс: https://docs.docker.com/toolbox/toolbox_install_windows/		step 2
+// после того, как отработает инсталлер, надо запустить "Docker Quickstart Terminal" - он при первом запуске сам создат докер-вирт-машинку, в которой уже будут хоститься контейнеры.
+// далее можно управлять машинкой и контейнерами через консольные команды: docker-machine и docker
+
+// ! если посмотреть, что запускается при запуске "Docker Quickstart Terminal", то это скрипт c:\Program Files\Docker Toolbox\start.sh
+// в нем видно, что если машинки еще нет, то она создается (ищи команду "${DOCKER_MACHINE}" create...)
+// соотв. ее можно подправить, дополнив нужными параметрами, например: --virtualbox-memory "4096" --virtualbox-cpu-count "2"
+// а ниже есть выставление STEP="Setting env" и там выполняется пара команд, без которых, наверное, и были проблемы с машинкой, если создавать ее руками!
+
+// еще этот start.sh дергает VBoxManage.exe, который лежит в папке c:\Program Files\Oracle\VirtualBox>
+
+c:\Program Files\Oracle\VirtualBox>
+
+// чтобы убедиться, что докер поднялся корректно - надо запусть контейнер hello-world
+docker run hello-world
+
+// если будет ошибка типа ...timeout, то тут дело не в прокси, а хз в чем. 
+// мне помогло только удаление машинки и запуск "Docker Quickstart Terminal", чтобы он сам создал дефолтную машинку
+
+// создать и запустить дефолтную вирт. машину (в которой уже будут хоститься контейнеры)
+docker-machine create
+
+// может потребоваться прописать в конфиг докер-машинки прокси, для этого 
+// 1) имем в ее конфиг: c:\Users\<username>\.docker\machine\machines\default\config.json
+// 2) добавляем эл-ты в массив Env (путь HostOptions/EngineOptions/Env):
+            "Env": [
+                "HTTP_PROXY=http://proxy.company.ru:8000",
+                "HTTPS_PROXY=http://proxy.company.ru:8000",
+                "NO_PROXY=192.168.99.100"
+            ],
+
+// список машин
+docker-machine ls 
+
+// запустить/остановить машину
+docker-machine start/stop
+
+// посмотреть и применить переменные окружения
+docker-machine env
+
+// там будет написано, что нужно выполнить команду (ниже), чтобы прописать эти переменные
+@FOR /f "tokens=*" %i IN ('docker-machine env') DO @%i
+
+
+// на docker-machine можно зайти по ssh, под юзером docker, пароль tcuser
+
+// вот так можно запустить консоль с убунту на докере
+docker run --interactive --tty ubuntu bash
+
+// посмотреть какие контейнеры в докере
+docker container ls --all
+docker ps --all
+
+// после выключения контейнер все еще остается висеть в докере, но в выключенном состоянии.
+// чтобы включить выключенный контейнер, надо знать его ID или имя (которое можно задать при старте контейнера)
+docker start  CONTAINER_ID # restart it in the background
+docker attach CONTAINER_ID # reattach the terminal & stdin
+
+// удалить все контейнеры (работающие в данный момент тоже - ключ -f)
+FOR /f "tokens=*" %i IN ('docker ps -a -q') DO docker rm -f %i
+
+// вот так можно запустить консоль внутри контейнера
+docker exec -it CONTAINER_ID bash
+
+// например, запустили nginx и перенаправили локальный порт 8080 на порт 80 внутри контейнера
+docker run --name my-nginx -d -p 8080:80 nginx
+
+// и потом подключились к его контейнеру в консоли
+docker exec -it my-nginx bash
+
+// после запуска nginx можно открыть его страничку так (192.168.99.100 - это IP докер-машинки, можно подсмотреть через команду: docker-machine ls)
+http://192.168.99.100:8080/index.html
+
+// как правило, контейнер сделан на базе ОС linux, но она голая, там даже нет редактора vim, но его можно установить:)
+// 1. подключиться консолью в контейнер - см. выше
+// 2. выполнить
+apt-get update
+apt-get install vim
+
+// вот так смотреть логи контейнера
+docker logs <ID или имя контейнера> -f
+
+
+// чтобы docker-compose смог выполнить pull из артифакори (например с repo.company.ru:1121), предварительно нужно авторизоваться
+// для этого надо выполнить команду
+docker login repo.company.ru:1121
+// и ввести логин/пароль. логин без домена
+// в результате будет создан файл c:\Users\akonyaev\.docker\config.json с хешом auth-сессии.
+
+
+- при развертывании докер-контейнеров через компоуз есть вариант установить сеть host (по умолчанию bridge), тогда докер-хост будет виден по локалхосту из контейнера
+	см. https://dev.to/bufferings/access-host-from-a-docker-container-4099
+		
+- посмотреть сеть, которая поднята докером для контейнеров:
+	docker network inspect <имя сети>
+	
+// скачать образ из репозитория в локальный файл
+docker save -o openjdk_8.tar repo.company.ru:1121/openjdk:8
+
+// экспорт/импорт
+docker save -o stub.tzg adapter-stub
+docker load -i stub.tzg
+// после чего можно использовать имя образа, которое вернет команда load
+
+// вывод списка контейнеров с форматированием
+docker ps -a --format "table {{.Names}}\t{{.ID}}\t{{.Status}}\t{{.Ports}}"
+
+// удалить старые не используемые образы
+docker image prune --force --all
+
+// запустить докер-образ в "спящем" режиме, чтобы покопаться в его содержимомо
+// т.е. переопределяю вход. точку и запускаю баш
+docker run -it --rm --entrypoint /bin/sh "repo.company.ru/ewrnd.docker/flyway:latest"
+docker run -it --rm --entrypoint /bin/sh my_image_name
+
