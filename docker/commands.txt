@@ -1,0 +1,40 @@
+// run hello-world container to check docker runs correctly
+docker run hello-world
+
+// посмотреть какие контейнеры в докере
+docker container ls --all
+docker ps --all
+docker ps -a
+docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}\t{{.Command}}"
+
+// force remove all containers
+FOR /f "tokens=*" %i IN ('docker ps -a -q') DO docker rm -f %i
+
+// run console inside container
+docker exec -it CONTAINER_ID bash
+
+// run ubuntu as container
+docker run --interactive --tty ubuntu bash
+
+// reading container logs in flow regime and only last 100 rows
+docker logs -f --tail 100 CONTAINER_ID
+
+// login to specific repo to enable docker download your company's images
+docker login repo.company.ru
+
+// inspect docker network
+docker network inspect <имя сети>
+
+// download image from repo to file
+docker save -o openjdk_8.tar repo.company.ru:1121/openjdk:8
+
+// export/import images
+docker save -o my_container.tzg my_container
+docker load -i my_container.tzg
+
+// remove all unused images from local docker cache
+docker image prune --force --all
+
+// run container in sleeping regime to able to inspect its file system
+docker run -it --rm --entrypoint /bin/sh "repo.company.ru/my_image:latest"
+docker run -it --rm --entrypoint /bin/sh my_image

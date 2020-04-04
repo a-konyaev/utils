@@ -1,0 +1,23 @@
+// if docker command take a lot of time (e.g. "docker ps" may take ~30 seconds)
+
+I tryed, but this did not help:
+- disable ipv6
+- eliminate any virus protection software
+- reinstall docker (Docker Desktop for Windows)
+
+The solution that helped me (from this article )!
+- execute command 
+	nbtstat /n
+	
+	it print (on my computer)
+	
+	Name               Type         Status
+    ---------------------------------------------
+    AKONYAEV-MOB   <20>  UNIQUE      Registered
+    AKONYAEV-MOB   <00>  UNIQUE      Registered
+    CROC           <00>  GROUP       Registered
+	
+- add to c:\windows\system32\drivers\etc\hosts
+	127.0.0.1 AKONYAEV-MOB
+	127.0.0.1 CROC
+
