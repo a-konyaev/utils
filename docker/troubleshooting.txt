@@ -5,7 +5,7 @@ I tryed, but this did not help:
 - eliminate any virus protection software
 - reinstall docker (Docker Desktop for Windows)
 
-The solution that helped me (from this article )!
+The solution that helped me:
 - execute command 
 	nbtstat /n
 	
