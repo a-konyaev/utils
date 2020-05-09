@@ -38,3 +38,6 @@ docker image prune --force --all
 // run container in sleeping regime to able to inspect its file system
 docker run -it --rm --entrypoint /bin/sh "repo.company.ru/my_image:latest"
 docker run -it --rm --entrypoint /bin/sh my_image
+
+// run docker inside docker that can create not child containers, but sibling
+docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock docker
